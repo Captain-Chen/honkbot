@@ -1,0 +1,16 @@
+{
+  "name": "honkbot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Richard Nguyen",
+  "license": "MIT",
+  "dependencies": {
+    "node-sdl2": "git+https://github.com/Captain-Chen/node-sdl2.git",
+    "sdl2-ttf": "^2.0.4",
+    "twitch-js": "^1.2.17"
+  }
+}
