@@ -1,7 +1,7 @@
 const print = console.log.bind(console);
 const sdl = require('node-sdl2');
 const Dungeon = require('./modules/dungeon');
-const client = require('./modules/twitch-client');
+const Client = require('./modules/twitch-client');
 
 // SDL window params
 const title = "Test Dungeon";
@@ -25,6 +25,8 @@ let window = sdl.SDL_CreateWindow(title,
 
 // create a dungeon game
 let game = new Dungeon();
+let client = new Client();
+client.connect();
 
 // create renderer
 let renderer = sdl.SDL_CreateRenderer(window, -1, sdl.SDL_RENDERER_ACCELERATED | sdl.SDL_RENDERER_PRESENTVSYNC);

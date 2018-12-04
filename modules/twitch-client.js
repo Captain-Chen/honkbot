@@ -1,11 +1,35 @@
+const print = console.log.bind(console);
 const tjs = require('twitch-js');
 const options = require('./options');
 
-// init twitch client
-const client = new tjs.client(options);
-client.connect()
+function Client(){
+  this._client = new tjs.client(options);
+  
+  // add event listeners
+  this._client.on('message', messageHandler);
+}
+
+
+Client.prototype.connect = function(){
+  this._client
+  .connect()
   .catch((err) => {
     console.error(err);
   });
+}
 
-module.exports = client;
+Client.prototype.disconnect = function(){
+  this._client
+  .disconnect()
+  .catch((err) => {
+    console.error(err);
+  });
+}
+
+function messageHandler(channel, userstate, message, self){
+  if(self){
+    return;
+  }
+}
+
+module.exports = Client;
