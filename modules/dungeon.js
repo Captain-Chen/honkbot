@@ -1,21 +1,41 @@
-function Dungeon(){
-  this.partyList = [];
-}
+const print = console.log.bind(this);
 
-Dungeon.prototype.reset = function(){}
-Dungeon.prototype.start = function(){}
-
-Dungeon.prototype.join = function(sender){
-  if(!this.partyList.exists(sender)){
-    this.partyList.push(sender);
-    return `${sender} joined the party.`;
-  }else{
-    return `${sender}, you are already in the party!`;
+class Dungeon{
+  constructor(connection){
+    this.irc = connection;
+    this.handleMessages = this.handleMessages.bind(this);
+    this.irc._client.on('message', this.handleMessages);
+    this.partyList = [];
   }
-}
 
-Dungeon.prototype.render = function(renderer){
-  
+  start(){}
+
+  reset(){}
+
+  join(sender){
+    if(!this.partyList.exists(sender)){
+      this.partyList.push(sender);
+      return `${sender} joined the party.`;
+    }else{
+      return `${sender}, you are already in the party!`;
+    }
+  }
+
+  render(renderer){
+
+  }
+
+  handleMessages(channel, userstate, message, self){
+    if(self){
+      return;
+    }
+
+    let sender = userstate['display-name'];
+
+    if(message === "!dungeon"){
+      this.irc._client.say(channel, this.join(sender));
+    }
+  }
 }
 
 Array.prototype.exists = function(value){

@@ -23,10 +23,11 @@ let window = sdl.SDL_CreateWindow(title,
   sdl.SDL_WINDOW_SHOWN
 );
 
-// create a dungeon game
-let game = new Dungeon();
 let client = new Client();
 client.connect();
+
+// create a dungeon game
+let game = new Dungeon(client);
 
 // create renderer
 let renderer = sdl.SDL_CreateRenderer(window, -1, sdl.SDL_RENDERER_ACCELERATED | sdl.SDL_RENDERER_PRESENTVSYNC);
