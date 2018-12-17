@@ -9,7 +9,8 @@
   "author": "Richard Nguyen",
   "license": "MIT",
   "dependencies": {
-    "node-sdl2": "git+https://github.com/Captain-Chen/node-sdl2.git",
+    "fastcall": "^0.2.6",
+    "sdl2-link": "^2.1.1",
     "twitch-js": "^1.2.17"
   }
 }

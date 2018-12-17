@@ -1,76 +1,90 @@
 const print = console.log.bind(console);
-const sdl = require('node-sdl2');
+
+const SDL2link = require('sdl2-link');
+const SDL = SDL2link()
+    .withFastcall(require('fastcall'))
+    .withTTF()
+    .load();
+
 const Dungeon = require('./modules/dungeon');
 const Client = require('./modules/twitch-client');
 
-// SDL window params
-const title = "Test Dungeon";
-const SCREENWIDTH = 400;
-const SCREENHEIGHT = 400;
-let quit = false;
-
-// initialize SDL
-if (sdl.SDL_Init(sdl.SDL_INIT_VIDEO) < 0) {
-  console.error(sdl.SDL_GetError());
-}
-
-// create window
-let window = sdl.SDL_CreateWindow(title,
-  sdl.SDL_WINDOWPOS_UNDEFINED,
-  sdl.SDL_WINDOWPOS_UNDEFINED,
-  SCREENWIDTH,
-  SCREENHEIGHT,
-  sdl.SDL_WINDOW_SHOWN
-);
-
+// initialize client and game
 let client = new Client();
 client.connect();
 
 // create a dungeon game
 let game = new Dungeon(client);
 
-// create renderer
-let renderer = sdl.SDL_CreateRenderer(window, -1, sdl.SDL_RENDERER_ACCELERATED | sdl.SDL_RENDERER_PRESENTVSYNC);
+// SDL window params
+const title = SDL.toCString("Test Dungeon");
+const SCREENWIDTH = 400;
+const SCREENHEIGHT = 400;
+let quit = false;
 
-let currTime = sdl.SDL_GetTicks();
+// initialize SDL
+if (SDL.SDL_Init(SDL.SDL_INIT_VIDEO) < 0) {
+  console.error(SDL.SDL_GetError());
+}
+
+// initialize SDL TTF
+if(SDL.TTF_Init() < 0){
+  console.error(SDL.SDL_GetError());
+}
+
+// create SDL window
+const window = SDL.SDL_CreateWindow(
+  title,
+  SDL.SDL_WINDOWPOS_UNDEFINED,
+  SDL.SDL_WINDOWPOS_UNDEFINED,
+  SCREENWIDTH,
+  SCREENHEIGHT,
+  SDL.SDL_WindowFlags.SDL_WINDOW_SHOWN
+);
+
+// create SDL renderer
+let renderer = SDL.SDL_CreateRenderer(window, -1, SDL.SDL_RendererFlags.SDL_RENDERER_ACCELERATED | SDL.SDL_RendererFlags.SDL_RENDERER_PRESENTVSYNC);
+
+let currTime = SDL.SDL_GetTicks();
 let oldTime = currTime;
 let deltaTime = 0;
 
 // main event loop
 (function tick() {
-  let e = new sdl.SDL_Event();
+  let e = new SDL.SDL_Event();
 
   if (!quit) {
     // listen for events
-    while (sdl.SDL_PollEvent(e.ref()) !== 0) {
+    while (SDL.SDL_PollEvent(e.ref()) !== 0) {
       event(e);
     }
 
     oldTime = currTime;
-    currTime = sdl.SDL_GetTicks();
+    currTime = SDL.SDL_GetTicks();
     deltaTime = (currTime - oldTime) / 1000;
 
     update(deltaTime);
     render(renderer);
 
-    // asynchronous recursive callback
     setImmediate(tick, 0);
   } else {
-    sdl.SDL_DestroyWindow(window);
-    sdl.SDL_Quit();
+    SDL.SDL_DestroyRenderer(renderer);
+    SDL.SDL_DestroyWindow(window);
+
+    SDL.SDL_Quit();
+    SDL.TTF_Quit();
     client.disconnect();
   }
 })();
 
-
 function event(e) {
   switch (e.type) {
-    case sdl.SDL_EventType.SDL_QUIT:
+    case SDL.SDL_EventType.SDL_QUIT:
       quit = true;
       break;
-    case sdl.SDL_EventType.SDL_KEYDOWN:
+    case SDL.SDL_EventType.SDL_KEYDOWN:
       switch (e.key.keysym.scancode) {
-        case sdl.SDL_SCANCODE_E:
+        case SDL.SDL_SCANCODE_E:
           break;
       }
       break;
@@ -81,13 +95,14 @@ function update(delta) {
 }
 
 function render(renderer) {
-  if (sdl.SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF) !== 0) {
-    console.error(sdl.SDL_GetError());
+  if (SDL.SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF) !== 0) {
+    console.error(SDL.SDL_GetError());
   }
 
-  if (sdl.SDL_RenderClear(renderer) !== 0) {
-    console.error(sdl.SDL_GetError());
+  if (SDL.SDL_RenderClear(renderer) !== 0) {
+    console.error(SDL.SDL_GetError());
   }
 
-  sdl.SDL_RenderPresent(renderer);
+  // let game do stuff with the renderer
+  game.render(renderer);
 }
