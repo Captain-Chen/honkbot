@@ -10,6 +10,7 @@ if(SDL.TTF_Init() > 0){
   throw new Error(SDL.SDL_GetError());
 }
 
+// globals
 const tuffy = SDL.TTF_OpenFont(SDL.toCString("tuffy.ttf"), 14);
 let messageSurfacePtr = SDL.TTF_RenderText_Blended(tuffy, SDL.toCString("Hello my fellow honkers"), 0xFFFFFFFF);
 
@@ -20,7 +21,7 @@ class Dungeon {
   constructor(connection) {
     this.irc = connection;
     this.handleMessages = this.handleMessages.bind(this);
-    this.irc._client.on('message', this.handleMessages);
+    this.irc.client.on('message', this.handleMessages);
     this.partyList = [];
   }
 
@@ -60,7 +61,7 @@ class Dungeon {
     let sender = userstate['display-name'];
 
     if (message === "!dungeon") {
-      this.irc._client.say(channel, this.join(sender));
+      this.irc.client.say(channel, this.join(sender));
     }
   }
 }

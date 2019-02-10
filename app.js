@@ -6,18 +6,16 @@ const SDL = SDL2link()
     .withTTF()
     .load();
 
-const Dungeon = require('./modules/dungeon');
+//const Dungeon = require('./modules/dungeon');
+const Fishing = require('./modules/fishing');
 const Client = require('./modules/twitch-client');
 
-// initialize client and game
+// initialize irc client
 let client = new Client();
 client.connect();
 
-// create a dungeon game
-let game = new Dungeon(client);
-
-// SDL window params
-const title = SDL.toCString("Test Dungeon");
+//SDL window params
+const title = SDL.toCString("Fishing");
 const SCREENWIDTH = 400;
 const SCREENHEIGHT = 400;
 let quit = false;
@@ -27,7 +25,7 @@ if (SDL.SDL_Init(SDL.SDL_INIT_VIDEO) < 0) {
   console.error(SDL.SDL_GetError());
 }
 
-// initialize SDL TTF
+// // initialize SDL TTF
 if(SDL.TTF_Init() < 0){
   console.error(SDL.SDL_GetError());
 }
@@ -42,8 +40,10 @@ const window = SDL.SDL_CreateWindow(
   SDL.SDL_WindowFlags.SDL_WINDOW_SHOWN
 );
 
-// create SDL renderer
+//create SDL renderer
 let renderer = SDL.SDL_CreateRenderer(window, -1, SDL.SDL_RendererFlags.SDL_RENDERER_ACCELERATED | SDL.SDL_RendererFlags.SDL_RENDERER_PRESENTVSYNC);
+// initialize fishing game
+let game = new Fishing(client, renderer);
 
 let currTime = SDL.SDL_GetTicks();
 let oldTime = currTime;
@@ -82,12 +82,12 @@ function event(e) {
     case SDL.SDL_EventType.SDL_QUIT:
       quit = true;
       break;
-    case SDL.SDL_EventType.SDL_KEYDOWN:
-      switch (e.key.keysym.scancode) {
-        case SDL.SDL_SCANCODE_E:
-          break;
-      }
-      break;
+    // case SDL.SDL_EventType.SDL_KEYDOWN:
+    //   switch (e.key.keysym.scancode) {
+    //     case SDL.SDL_SCANCODE_E:
+    //       break;
+    //   }
+    //   break;
   }
 }
 
@@ -104,5 +104,5 @@ function render(renderer) {
   }
 
   // let game do stuff with the renderer
-  game.render(renderer);
+  game.render();
 }

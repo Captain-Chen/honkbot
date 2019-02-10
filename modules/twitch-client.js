@@ -3,11 +3,11 @@ const options = require('./options');
 
 class Client{
   constructor(){
-    this._client = new tjs.client(options);
+    this.client = new tjs.client(options);
   }
 
   connect(){
-    this._client
+    this.client
     .connect()
     .catch((err) => {
       console.error(err);
@@ -15,7 +15,7 @@ class Client{
   }
 
   disconnect(){
-    this._client
+    this.client
     .disconnect()
     .catch((err) => {
       console.error(err);
