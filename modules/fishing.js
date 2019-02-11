@@ -17,12 +17,21 @@ class Fish {
 }
 
 let fishData = {
+  superRare: [
+    ['froggy'],
+    ['angler fish'],
+    ['axolotl'],
+    ['coelacanth'],
+    ['lion fish'],
+    ['great white shark']
+  ],
   rare: [
     ['honk fish'],
     ['bluefin tuna'],
     ['rainbow trout'],
     ['arowana'],
-    ['blue marlin']
+    ['blue marlin'],
+    ['octopus']
   ],
   uncommon: [
     ['trout'],
@@ -49,7 +58,7 @@ Object.keys(fishData).forEach((rarity) => {
 });
 
 // globals
-if(SDL.TTF_Init() > 0){
+if (SDL.TTF_Init() > 0) {
   throw new Error(SDL.SDL_GetError());
 }
 
@@ -88,7 +97,7 @@ class Fishing {
       if (successRate >= 30) {
         let fish = this.getRandomFish();
         // dumb way to handle fish names starting with 'a'
-        let result = (fish.name[0] === 'a') ? `${sender} caught an ${fish}!` : `${sender} caught a ${fish}`;
+        let result = (fish.name[0] === 'a') ? `${sender} caught an ${fish}!` : `${sender} caught a ${fish}!`;
         return result;
       } else {
         return `${sender}'s line snapped..`;
@@ -98,11 +107,30 @@ class Fishing {
     }
   }
 
+  broadcastResult(channel, sender, message) {
+    // game loop
+    let progress = 0;
+    let t = setInterval(() => {
+      if (progress < message.length) {
+        this.irc.client.say(channel, message[progress]);
+      }
+      else 
+      {
+        // remove person from list
+        this.fishingList.remove(sender);
+        clearInterval(t);
+      }
+      progress++;
+    }, 7e3);
+  }
+
   getRandomFish() {
     let result = this.calculateResult(0, 100);
-    if (result >= 97) {
+    if(result >= 99){
+      return fishes.superRare[Math.floor(Math.random() * fishes.superRare.length)];
+    } else if (result >= 97) {
       return fishes.rare[Math.floor(Math.random() * fishes.rare.length)];
-    } else if (result >= 40) {
+    } else if (result >= 70) {
       return fishes.uncommon[Math.floor(Math.random() * fishes.uncommon.length)];
     } else {
       return fishes.common[Math.floor(Math.random() * fishes.common.length)];
@@ -119,22 +147,13 @@ class Fishing {
       // check if user is able to fish
       let canFish = this.join(sender);
       if (canFish) {
-        let msg = [];
-        msg.push(`${sender} casts out a line..`);
-        //this.irc.client.say(channel, `${sender} casts out a line..`);
-        messageSurfacePtr = SDL.TTF_RenderText_Blended(tuffy, SDL.toCString(`${msg}`), 0xFFFFFFFF);
-
-        setTimeout(() => {
-          //this.irc.client.say(channel, `${sender} feels a tug on their line and starts to reel it in.`);
-          msg.push(`${sender} feels a tug on their line and starts to reel it in.`);
-          // broadcast result
-          let castResult = this.castLine(sender);
-          msg.push(castResult);
-          //this.irc.client.say(channel, castResult);
-          messageSurfacePtr = SDL.TTF_RenderText_Blended_Wrapped(tuffy, SDL.toCString(`${msg.join(' ')}`), 0xFFFFFFFF, 200);
-          // remove user from current fishers when finished
-          this.fishingList.remove(sender);
-        }, 5e3);
+        this.irc.client.say(channel, `${sender} casts out a line..`);
+        // build dialog
+        let msg = [
+          `${sender} feels a tug on their line and begins to reel it in.`,
+          this.castLine(sender)
+        ];
+        this.broadcastResult(channel, sender, msg);
       } else {
         this.irc.client.say(channel, `${sender}, you are already fishing!`);
       }
