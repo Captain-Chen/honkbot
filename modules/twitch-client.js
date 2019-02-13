@@ -1,11 +1,26 @@
 const tjs = require('twitch-js');
 const options = require('./options');
 
-// init twitch client
-const client = new tjs.client(options);
-client.connect()
-  .catch((err) => {
-    console.error(err);
-  });
+class Client{
+  constructor(){
+    this.client = new tjs.client(options);
+  }
 
-module.exports = client;
+  connect(){
+    this.client
+    .connect()
+    .catch((err) => {
+      console.error(err);
+    });
+  }
+
+  disconnect(){
+    this.client
+    .disconnect()
+    .catch((err) => {
+      console.error(err);
+    });
+  }
+}
+
+module.exports = Client;
