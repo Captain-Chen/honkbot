@@ -1,18 +1,20 @@
 const print = console.log.bind(console);
 
 class Fish {
-  constructor(name, rarity, flavourText = "") {
+  constructor(name, rarity, sizeRange = { min: 0, max: 0 }) {
     this.name = name;
     this.rarity = rarity;
-    this.flavourText = flavourText;
+    this.sizeRange = { min: sizeRange.min, max: sizeRange.max };
+  }
+
+  getFishSize(minValue, maxValue) {
+    return 0;
   }
 
   toString() {
+    let size = this.sizeRange;
     let rarity;
     switch (String(this.rarity).toLowerCase()) {
-      case 'superrare':
-        rarity = 'super rare';
-        break;
       case 'verycommon':
         rarity = 'very common';
         break;
@@ -20,87 +22,26 @@ class Fish {
         rarity = this.rarity;
         break;
     }
-    return `${rarity} ${this.name}`;
+    return `${rarity} ${this.name} (${this.getFishSize(size.min, size.max).toFixed(2) } cm)`;
   }
 }
 
 let fishData = {
-  superRare: [
-    ['froggy', 'Whoa! There you are froggy!'],
-    ['coelacanth', 'Whoa! It\'s a living fossil!'],
-    ['dorado', 'That should be their motto!'],
-    ['great white shark', 'It was a shark attack!'],
-    ['stringfish', 'It was strung along quite easily.'],
-    ['whale shark', 'It could have swallowed them up!'],
-    ['beluga whale', 'What a majestic beast..']
-  ],
   rare: [
-    ['angelfish'],
-    ['arapaima'],
-    ['arowana'],
-    ['blowfish'],
-    ['blue marlin'],
-    ['gar'],
-    ['giant snakehead'],
-    ['giant trevally'],
-    ['goldfish'],
-    ['hammerhead shark'],
-    ['king salmon'],
-    ['koi'],
-    ['mitten crab'],
-    ['napoleonfish'],
-    ['nibble fish'],
-    ['oarfish'],
-    ['ocean sunfish'],
-    ['popeyed goldfish'],
-    ['saddled bichir'],
-    ['saw fish'],
-    ['soft-shelled turtle'],
-    ['tuna']
-  ],
-  uncommon: [
-    ['bluegill'],
-    ['brook trout'],
-    ['butterflyfish'],
-    ['catfish'],
-    ['char'],
-    ['clownfish'],
-    ['eel'],
-    ['football fish'],
-    ['freshwater goby'],
-    ['killifish'],
-    ['large bass'],
-    ['neon tetra'],
-    ['octopus'],
-    ['olive flounder'],
-    ['puffer fish'],
-    ['red snapper'],
-    ['ribbon eel'],
-    ['surgeonfish'],
-    ['sweetfish']
+    ['crawfish', '10.0-14.0'],
+    ['king salmon', '113.7-166.3'],
+    ['koi', '46.8-73.1'],
+    ['loach', '16.7-23.3'],
+    ['neon tetra', '1.7-2.3'],
+    ['pale chub', '12.5-17.4'],
+    ['rainbow trout', '46.8-73.1'],
   ],
   common: [
-    ['barbel steed'],
-    ['bitterling'],
-    ['cherry salmon'],
-    ['crawfish'],
-    ['crucian carp'],
-    ['dab'],
-    ['frog'],
-    ['tadpole'],
-    ['horse mackerel'],
-    ['loach'],
-    ['pale chub'],
-    ['pond smelt', 'It could sure use a bath!'],
-    ['seahorse', `They meant to, of course!`],
-    ['small bass'],
-    ['squid', 'Yes they did!']
+    ['black bass', '41.7-58.2'],
   ],
   veryCommon: [
-    ['black bass', 'Now that\'s some class!'],
-    ['carp'],
-    ['salmon', 'Oh, that\'s slammin\'!'],
-    ['sea bass', 'What?! You again?!']
+    ['crucian carp', '15.0-24.9'],
+    ['yellow perch', '29.2-40.7']
   ]
 };
 
@@ -109,18 +50,14 @@ let fishes = {};
 Object.keys(fishData).forEach((rarity) => {
   fishes[rarity] = [];
   for (let i = 0; i < fishData[rarity].length; i++) {
-    if (fishData[rarity][i][1] !== undefined) {
-      fishes[rarity][i] = new Fish(fishData[rarity][i][0], rarity, fishData[rarity][i][1]);
-    } else {
-      fishes[rarity][i] = new Fish(fishData[rarity][i][0], rarity);
-    }
+    let sizeRange = fishData[rarity][i][1].split('-');
+    fishes[rarity][i] = new Fish(fishData[rarity][i][0], rarity, { min: sizeRange[0], max: sizeRange[1] });
   }
 });
 
 class Fishing {
   constructor(connection) {
     this.irc = connection;
-
     this.handleMessages = this.handleMessages.bind(this);
     this.irc.client.on('message', this.handleMessages);
     this.fishingList = [];
@@ -137,17 +74,15 @@ class Fishing {
 
   // main fishing game logic
   castLine(sender) {
-    let lineWasBitten = this.calculateResult(0, 100);
+    let lineWasBitten = this.calculateResult(100, 100);
     // fish bit the line
     if (lineWasBitten >= 20) {
       // calculate if fish was caught
-      let successRate = this.calculateResult(0, 100);
+      let successRate = this.calculateResult(100, 100);
       if (successRate >= 25) {
         let fish = this.getRandomFish();
         // dumb way to handle rarity name starting with u
         let result = (fish.rarity[0] === 'u') ? `${sender} caught an ${fish}!` : `${sender} caught a ${fish}!`;
-        // check if there is flavour text
-        if (fish.flavourText.length > 0) { result += ` ${fish.flavourText}`; }
         return result;
       } else {
         return `${sender}'s line snapped! The fish got away..`;
@@ -175,18 +110,19 @@ class Fishing {
   }
 
   getRandomFish() {
-    let result = this.calculateResult(0, 100);
-    if (result >= 99) {
-      return fishes.superRare[Math.floor(Math.random() * fishes.superRare.length)];
-    } else if (result >= 97) {
-      return fishes.rare[Math.floor(Math.random() * fishes.rare.length)];
-    } else if (result >= 70) {
-      return fishes.uncommon[Math.floor(Math.random() * fishes.uncommon.length)];
-    } else if (result >= 40) {
-      return fishes.common[Math.floor(Math.random() * fishes.common.length)];
-    } else {
-      return fishes.veryCommon[Math.floor(Math.random() * fishes.veryCommon.length)];
-    }
+    return fishes.common[Math.floor(Math.random() * fishes.common.length)];
+    // let result = this.calculateResult(0, 100);
+    // if (result >= 99) {
+    //   return fishes.superRare[Math.floor(Math.random() * fishes.superRare.length)];
+    // } else if (result >= 97) {
+    //   return fishes.rare[Math.floor(Math.random() * fishes.rare.length)];
+    // } else if (result >= 70) {
+    //   return fishes.uncommon[Math.floor(Math.random() * fishes.uncommon.length)];
+    // } else if (result >= 40) {
+    //   return fishes.common[Math.floor(Math.random() * fishes.common.length)];
+    // } else {
+    //   return fishes.veryCommon[Math.floor(Math.random() * fishes.veryCommon.length)];
+    // }
   }
 
   handleMessages(channel, userstate, message, self) {
