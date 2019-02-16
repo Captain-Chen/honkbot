@@ -1,14 +1,14 @@
 const print = console.log.bind(console);
 
 class Fish {
-  constructor(name, rarity, sizeRange = { min: 0, max: 0 }) {
+  constructor(name, rarity, minVal, maxVal) {
     this.name = name;
     this.rarity = rarity;
-    this.sizeRange = { min: sizeRange.min, max: sizeRange.max };
+    this.sizeRange = { min: minVal, max: maxVal };
   }
 
   getFishSize(minValue, maxValue) {
-    return 0;
+    return Math.random() * (maxValue - minValue) + minValue;
   }
 
   toString() {
@@ -22,26 +22,38 @@ class Fish {
         rarity = this.rarity;
         break;
     }
-    return `${rarity} ${this.name} (${this.getFishSize(size.min, size.max).toFixed(2) } cm)`;
+    return `${rarity} ${this.name} (${this.getFishSize(size.min, size.max).toFixed(1) } cm)`;
   }
 }
 
 let fishData = {
   rare: [
-    ['crawfish', '10.0-14.0'],
-    ['king salmon', '113.7-166.3'],
-    ['koi', '46.8-73.1'],
-    ['loach', '16.7-23.3'],
-    ['neon tetra', '1.7-2.3'],
-    ['pale chub', '12.5-17.4'],
-    ['rainbow trout', '46.8-73.1'],
+    ['crawfish', 10.0, 14.0],
+    ['king salmon', 113.7, 166.3],
+    ['koi', 46.8, 73.1],
+    ['loach', 16.7, 23.3],
+    ['neon tetra', 1.7, 2.3],
+    ['pale chub', 12.5, 17.4],
+    ['rainbow trout', 46.8, 73.1],
+    ['barred knifejaw', 50.1, 69.9],
+    ['blowfish', 20.8, 29.1],
+    ['clown fish', 12.5, 17.5],
+    ['football fish', 50.1, 69.8],
+    ['napoleonfish', 175.1, 184.9],
+    ['sea horse', 6.7, 9.3],
+    ['surgeonfish', 25.9, 36.1],
+    ['tuna', 192.1, 267.8]
   ],
   common: [
-    ['black bass', '41.7-58.2'],
+    ['black bass', 41.7, 58.2],
+    ['red snapper', 75.1, 104.8]
   ],
   veryCommon: [
-    ['crucian carp', '15.0-24.9'],
-    ['yellow perch', '29.2-40.7']
+    ['crucian carp', 15.0, 24.9],
+    ['yellow perch', 29.2, 40.7],
+    ['horse mackeral', 33.4, 46.5],
+    ['olive flounder', 66.8, 93.1],
+    ['squid', 29.2, 40.7]
   ]
 };
 
@@ -50,8 +62,7 @@ let fishes = {};
 Object.keys(fishData).forEach((rarity) => {
   fishes[rarity] = [];
   for (let i = 0; i < fishData[rarity].length; i++) {
-    let sizeRange = fishData[rarity][i][1].split('-');
-    fishes[rarity][i] = new Fish(fishData[rarity][i][0], rarity, { min: sizeRange[0], max: sizeRange[1] });
+    fishes[rarity][i] = new Fish(fishData[rarity][i][0], rarity, fishData[rarity][i][1], fishData[rarity][i][2]);
   }
 });
 
@@ -74,15 +85,15 @@ class Fishing {
 
   // main fishing game logic
   castLine(sender) {
-    let lineWasBitten = this.calculateResult(100, 100);
+    let lineWasBitten = this.calculateResult(0, 100);
     // fish bit the line
     if (lineWasBitten >= 20) {
       // calculate if fish was caught
-      let successRate = this.calculateResult(100, 100);
+      let successRate = this.calculateResult(0, 100);
       if (successRate >= 25) {
         let fish = this.getRandomFish();
-        // dumb way to handle rarity name starting with u
-        let result = (fish.rarity[0] === 'u') ? `${sender} caught an ${fish}!` : `${sender} caught a ${fish}!`;
+        // dumb way to handle fish names that begin with a
+        let result = (fish.name[0] === 'a') ? `${sender} caught an ${fish}!` : `${sender} caught a ${fish}!`;
         return result;
       } else {
         return `${sender}'s line snapped! The fish got away..`;
@@ -110,19 +121,14 @@ class Fishing {
   }
 
   getRandomFish() {
-    return fishes.common[Math.floor(Math.random() * fishes.common.length)];
-    // let result = this.calculateResult(0, 100);
-    // if (result >= 99) {
-    //   return fishes.superRare[Math.floor(Math.random() * fishes.superRare.length)];
-    // } else if (result >= 97) {
-    //   return fishes.rare[Math.floor(Math.random() * fishes.rare.length)];
-    // } else if (result >= 70) {
-    //   return fishes.uncommon[Math.floor(Math.random() * fishes.uncommon.length)];
-    // } else if (result >= 40) {
-    //   return fishes.common[Math.floor(Math.random() * fishes.common.length)];
-    // } else {
-    //   return fishes.veryCommon[Math.floor(Math.random() * fishes.veryCommon.length)];
-    // }
+    let result = this.calculateResult(0, 100);
+    if (result >= 97) {
+      return fishes.rare[Math.floor(Math.random() * fishes.rare.length)];
+    } else if (result >= 45) {
+      return fishes.common[Math.floor(Math.random() * fishes.common.length)];
+    } else {
+      return fishes.veryCommon[Math.floor(Math.random() * fishes.veryCommon.length)];
+    }
   }
 
   handleMessages(channel, userstate, message, self) {
