@@ -22,7 +22,7 @@ class Fish {
         rarity = this.rarity;
         break;
     }
-    return `${rarity} ${this.name} (${this.getFishSize(size.min, size.max).toFixed(1) } cm)`;
+    return `${rarity} ${this.name} (${this.getFishSize(size.min, size.max).toFixed(1)} cm)`;
   }
 }
 
@@ -69,6 +69,7 @@ Object.keys(fishData).forEach((rarity) => {
 class Fishing {
   constructor(connection) {
     this.irc = connection;
+    this.activeChatters = this.irc.activeChatters;
     this.handleMessages = this.handleMessages.bind(this);
     this.irc.client.on('message', this.handleMessages);
     this.fishingList = [];
@@ -84,7 +85,7 @@ class Fishing {
   }
 
   // main fishing game logic
-  castLine(sender) {
+  castLine(fisher) {
     let lineWasBitten = this.calculateResult(0, 100);
     // fish bit the line
     if (lineWasBitten >= 20) {
@@ -93,27 +94,25 @@ class Fishing {
       if (successRate >= 25) {
         let fish = this.getRandomFish();
         // dumb way to handle fish names that begin with a
-        let result = (fish.name[0] === 'a') ? `${sender} caught an ${fish}!` : `${sender} caught a ${fish}!`;
+        let result = (fish.name[0] === 'a') ? `${fisher} caught an ${fish}!` : `${fisher} caught a ${fish}!`;
         return result;
       } else {
-        return `${sender}'s line snapped! The fish got away..`;
+        return `${fisher}'s line snapped! The fish got away..`;
       }
     } else {
-      return `${sender} didn't catch anything..`;
+      return `${fisher} didn't catch anything..`;
     }
   }
 
-  broadcastResult(channel, sender, message) {
+  broadcastResult(channel, message) {
     let progress = 0;
     // loop through all the messages and queue each one until we reach the end
     let t = setInterval(() => {
       if (progress < message.length) {
         this.irc.client.say(channel, message[progress]);
       }
-      else {
-        // remove person from list
-        this.fishingList.remove(sender);
-        this.irc.client.say(channel, `${sender}, you can fish again.`)
+      else 
+      {
         clearInterval(t);
       }
       progress++;
@@ -135,22 +134,19 @@ class Fishing {
     if (self) {
       return;
     }
-
     let sender = userstate['display-name'];
-    if (message === "!fish") {
-      // check if user is able to fish
-      let canFish = this.join(sender);
-      if (canFish) {
-        this.irc.client.say(channel, `${sender} casts out a line..`);
-        // build dialog
-        let msg = [
-          `${sender} feels a tug on their line and begins to reel it in.`,
-          this.castLine(sender)
-        ];
-        this.broadcastResult(channel, sender, msg);
-      } else {
-        this.irc.client.say(channel, `${sender}, you are already fishing! Please wait a few seconds.`);
-      }
+
+    // keep track of how often a user has said something
+    // if this is the first time the user has wrote something then add them
+    if (!this.activeChatters.has(sender)) {
+      this.activeChatters.set(sender, {
+        msgCount: 1,
+        timestamp: Date.now()
+      });
+    // otherwise increment the message count and update the timestamp
+    } else {
+      this.activeChatters.get(sender).msgCount++;
+      this.activeChatters.get(sender).timestamp = Date.now();
     }
   }
 
@@ -158,6 +154,26 @@ class Fishing {
     min = Math.ceil(min);
     max = Math.floor(max);
     return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
+  checkActiveChatters() {
+    this.activeChatters.forEach((val, user) => {
+      let secondsElapsed = (Date.now() - val.timestamp) / 1000;
+      if (secondsElapsed > 60.0) {
+        print(`Removing ${user} from active users due to inactivity`);
+        this.activeChatters.delete(user);
+      }else{
+        // check if the user has sent at least 3 messages overall in the past 30 seconds
+        if(this.activeChatters.get(user).msgCount >= 3 && secondsElapsed <= 30.0){
+          this.irc.client.say(this.irc.client.channels[0], `${user} casts out a line and begins fishing..`);
+          let msg = [
+            `${user} feels a tug on their line and begins to reel it in.`,
+            this.castLine(user)
+          ];
+          this.broadcastResult(this.irc.client.channels[0], msg);
+        }
+      }
+    });
   }
 }
 

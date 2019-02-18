@@ -4,6 +4,7 @@ const options = require('./options');
 class Client{
   constructor(){
     this.client = new tjs.client(options);
+    this.activeChatters = new Map();
   }
 
   connect(){
