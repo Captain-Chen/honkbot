@@ -1,5 +1,21 @@
 const print = console.log.bind(console);
 
+const SDL2link = require('sdl2-link');
+const SDL = SDL2link()
+  .withFastcall(require('fastcall'))
+  .withTTF()
+  .load();
+
+// initialize SDL libraries
+if (SDL.SDL_Init(SDL.SDL_INIT_VIDEO) < 0) {
+  throw SDL.SDL_GetError();
+}
+
+// initialize SDL TTF
+if (SDL.TTF_Init() < 0) {
+  throw SDL.SDL_GetError();
+}
+
 class Fish {
   constructor(name, rarity, minVal, maxVal) {
     this.name = name;
@@ -67,11 +83,13 @@ Object.keys(fishData).forEach((rarity) => {
 });
 
 class Fishing {
-  constructor(connection) {
+  constructor(connection, renderer) {
     this.irc = connection;
     this.activeChatters = this.irc.activeChatters;
     this.handleMessages = this.handleMessages.bind(this);
     this.irc.client.on('message', this.handleMessages);
+    print(renderer);
+    this.renderer = renderer;
     this.fishingList = [];
   }
 
@@ -111,8 +129,7 @@ class Fishing {
       if (progress < message.length) {
         this.irc.client.say(channel, message[progress]);
       }
-      else 
-      {
+      else {
         clearInterval(t);
       }
       progress++;
@@ -143,7 +160,7 @@ class Fishing {
         msgCount: 1,
         timestamp: Date.now()
       });
-    // otherwise increment the message count and update the timestamp
+      // otherwise increment the message count and update the timestamp
     } else {
       this.activeChatters.get(sender).msgCount++;
       this.activeChatters.get(sender).timestamp = Date.now();
@@ -162,9 +179,9 @@ class Fishing {
       if (secondsElapsed > 60.0) {
         print(`Removing ${user} from active users due to inactivity`);
         this.activeChatters.delete(user);
-      }else{
+      } else {
         // check if the user has sent at least 3 messages overall in the past 30 seconds
-        if(this.activeChatters.get(user).msgCount >= 3 && secondsElapsed <= 30.0){
+        if (this.activeChatters.get(user).msgCount >= 3 && secondsElapsed <= 30.0) {
           this.irc.client.say(this.irc.client.channels[0], `${user} casts out a line and begins fishing..`);
           let msg = [
             `${user} feels a tug on their line and begins to reel it in.`,
@@ -174,6 +191,14 @@ class Fishing {
         }
       }
     });
+  }
+
+  update() {
+    print('Game update was called');
+  }
+
+  render() {
+
   }
 }
 

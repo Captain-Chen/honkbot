@@ -11,7 +11,7 @@ const Fishing = require('./modules/fishing');
 const Client = require('./modules/twitch-client');
 
 // globals
-let gWindowPtr;
+let gWindow;
 let gRenderer;
 let gScreenSurface;
 let gMessageTexture;
@@ -34,7 +34,7 @@ function setupSDL() {
   }
 
   // create SDL window
-  gWindowPtr = SDL.SDL_CreateWindow(
+  gWindow = SDL.SDL_CreateWindow(
     title,
     SDL.SDL_WINDOWPOS_UNDEFINED,
     SDL.SDL_WINDOWPOS_UNDEFINED,
@@ -43,15 +43,15 @@ function setupSDL() {
     SDL.SDL_WindowFlags.SDL_WINDOW_SHOWN
   );
 
-  if(gWindowPtr === null){
+  if(gWindow === null){
     throw SDL.SDL_GetError();
   }else{
     // get window surface
-    gScreenSurface = SDL.SDL_GetWindowSurface(gWindowPtr);
+    gScreenSurface = SDL.SDL_GetWindowSurface(gWindow);
   }
 
   // create SDL renderer
-  gRenderer = SDL.SDL_CreateRenderer(gWindowPtr, -1, SDL.SDL_RendererFlags.SDL_RENDERER_ACCELERATED | SDL.SDL_RendererFlags.SDL_RENDERER_PRESENTVSYNC);
+  gRenderer = SDL.SDL_CreateRenderer(gWindow, -1, SDL.SDL_RendererFlags.SDL_RENDERER_ACCELERATED | SDL.SDL_RendererFlags.SDL_RENDERER_PRESENTVSYNC);
 
   // render string to a texture
   const tuffy = SDL.TTF_OpenFont(SDL.toCString("tuffy.ttf"), 36);
@@ -74,7 +74,7 @@ function tick() {
       event(e);
     }
 
-    //update(deltaTime);
+    update();
     render();
 
     setImmediate(tick, 0);
@@ -89,7 +89,7 @@ function tick() {
 function shutdownSDL() {
   // deallocate memory
   SDL.SDL_DestroyRenderer(gRenderer);
-  SDL.SDL_DestroyWindow(gWindowPtr);
+  SDL.SDL_DestroyWindow(gWindow);
   SDL.SDL_DestroyTexture(gMessageTexture);
 
   // quit SDL sub-systems
@@ -105,7 +105,9 @@ function event(e) {
   }
 }
 
-function update(delta) {
+function update() {
+  // call game update 
+  game.update();
 }
 
 function render() {
@@ -128,7 +130,8 @@ function render() {
 }
 
 function getTextureSize(texturePtr) {
-  const widthPtr = SDL.ref.alloc('int'), heightPtr = SDL.ref.alloc('int');
+  const widthPtr = SDL.ref.alloc('int');
+  const heightPtr = SDL.ref.alloc('int');
   SDL.SDL_QueryTexture(texturePtr, null, null, widthPtr, heightPtr);
 
   return { width: widthPtr.deref(), height: heightPtr.deref() };
@@ -145,14 +148,16 @@ process.on('SIGINT', () => {
 let client = new Client();
 client.connect();
 
+// initialize SDL
+setupSDL();
+
 // initialize fishing game
-let game = new Fishing(client);
+let game = new Fishing(client, gRenderer);
+
+// start SDL event loop
+tick();
 
 // run every 30 seconds
 let t = setInterval(() => {
   game.checkActiveChatters();
 }, 3e4);
-
-// initialize SDL
-setupSDL();
-tick();
