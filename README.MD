@@ -25,7 +25,7 @@ Wrapper class for the twitch-js library
 
 ## Misc Notes
 * You may need to download precompiled [SDL2](https://www.libsdl.org/download-2.0.php) libraries and place them in the project folder.
-* NodeV8 may 
+* NodeV8 will need to be used as a workaround as compilation will fail due to broken references when using the latest version of Node.
 
 ## SDL2 API Reference
 https://wiki.libsdl.org/CategoryAPI
