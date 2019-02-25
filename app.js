@@ -3,6 +3,7 @@ const print = console.log.bind(console);
 const SDL2link = require('sdl2-link');
 const SDL = SDL2link()
   .withFastcall(require('fastcall'))
+  .withImage()
   .withTTF()
   .load();
 
@@ -14,6 +15,7 @@ const Client = require('./modules/twitch-client');
 let gWindow;
 let gRenderer;
 let gScreenSurface;
+let gTexture;
 let gMessageTexture;
 let quit = false;
 
@@ -33,6 +35,9 @@ function setupSDL() {
     throw SDL.SDL_GetError();
   }
 
+  // initialize extension
+  SDL.IMG_Init(SDL.IMG_INIT_PNG);
+
   // create SDL window
   gWindow = SDL.SDL_CreateWindow(
     title,
@@ -43,11 +48,8 @@ function setupSDL() {
     SDL.SDL_WindowFlags.SDL_WINDOW_SHOWN
   );
 
-  if(gWindow === null){
+  if (gWindow === null) {
     throw SDL.SDL_GetError();
-  }else{
-    // get window surface
-    gScreenSurface = SDL.SDL_GetWindowSurface(gWindow);
   }
 
   // create SDL renderer
@@ -55,7 +57,10 @@ function setupSDL() {
 
   // render string to a texture
   const tuffy = SDL.TTF_OpenFont(SDL.toCString("tuffy.ttf"), 36);
-  const messageSurface = SDL.TTF_RenderText_Blended(tuffy, SDL.toCString("Hello my fellow honkers"), 0xFFFFFFFF);
+  const messageSurface = SDL.TTF_RenderText_Blended(tuffy, SDL.toCString("It's time to go fishing..."), 0xFFFFFFFF);
+
+  // load image from file into texture
+  gTexture = SDL.IMG_LoadTexture(gRenderer, SDL.toCString('resources/fishing.png'));
 
   // convert surface into a texture
   gMessageTexture = SDL.SDL_CreateTextureFromSurface(gRenderer, messageSurface);
@@ -74,8 +79,8 @@ function tick() {
       event(e);
     }
 
-    update();
     render();
+    update();
 
     setImmediate(tick, 0);
   } else {
@@ -91,6 +96,7 @@ function shutdownSDL() {
   SDL.SDL_DestroyRenderer(gRenderer);
   SDL.SDL_DestroyWindow(gWindow);
   SDL.SDL_DestroyTexture(gMessageTexture);
+  SDL.SDL_DestroyTexture(gTexture);
 
   // quit SDL sub-systems
   SDL.SDL_Quit();
@@ -106,24 +112,22 @@ function event(e) {
 }
 
 function update() {
-  // call game update 
   game.update();
 }
 
 function render() {
-  const { width, height } = getTextureSize(gMessageTexture);
-  const destRect = new SDL.SDL_Rect({ x: SCREEN_WIDTH / 2 - width / 2, y: SCREEN_HEIGHT / 2 - height / 2, w: width, h: height });
-
+  // set draw colour
   if (SDL.SDL_SetRenderDrawColor(gRenderer, 0, 0, 0xFF, 0xFF) !== 0) {
     throw SDL.SDL_GetError();
   }
 
+  // clear current screen
   if (SDL.SDL_RenderClear(gRenderer) !== 0) {
     throw SDL.SDL_GetError();
   }
 
-  // copy message texture into renderer
-  SDL.SDL_RenderCopy(gRenderer, gMessageTexture, null, destRect.ref());
+  // call game render
+  game.render();
 
   // render current frame onto screen
   SDL.SDL_RenderPresent(gRenderer);
@@ -151,8 +155,12 @@ client.connect();
 // initialize SDL
 setupSDL();
 
+let renderItems = new Map([
+  ['fisherChen', gTexture]
+]);
+
 // initialize fishing game
-let game = new Fishing(client, gRenderer);
+let game = new Fishing(client, gRenderer, renderItems);
 
 // start SDL event loop
 tick();

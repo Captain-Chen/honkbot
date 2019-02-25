@@ -16,6 +16,18 @@ if (SDL.TTF_Init() < 0) {
   throw SDL.SDL_GetError();
 }
 
+// globals
+const SCREEN_WIDTH = 640;
+const SCREEN_HEIGHT = 480;
+
+let fixedPositions = new Map([
+  [0, { x: SCREEN_WIDTH - 140, y: 0 }],
+  [1, { x: SCREEN_WIDTH - 140, y: 75 }],
+  [2, { x: SCREEN_WIDTH - 140, y: 150 }],
+  [3, { x: SCREEN_WIDTH - 140, y: 225 }],
+  [4, { x: SCREEN_WIDTH - 140, y: 300 }]
+]);
+
 class Fish {
   constructor(name, rarity, minVal, maxVal) {
     this.name = name;
@@ -83,13 +95,16 @@ Object.keys(fishData).forEach((rarity) => {
 });
 
 class Fishing {
-  constructor(connection, renderer) {
+  constructor(connection, renderer, renderItems) {
     this.irc = connection;
     this.activeChatters = this.irc.activeChatters;
     this.handleMessages = this.handleMessages.bind(this);
     this.irc.client.on('message', this.handleMessages);
-    print(renderer);
+
+    // SDL stuff
     this.renderer = renderer;
+    this.renderItems = renderItems;
+
     this.fishingList = [];
   }
 
@@ -174,6 +189,7 @@ class Fishing {
   }
 
   checkActiveChatters() {
+    print(this.activeChatters);
     this.activeChatters.forEach((val, user) => {
       let secondsElapsed = (Date.now() - val.timestamp) / 1000;
       if (secondsElapsed > 60.0) {
@@ -194,11 +210,37 @@ class Fishing {
   }
 
   update() {
-    print('Game update was called');
   }
 
   render() {
+    let numOfChens = this.activeChatters.size;
+    if (numOfChens > fixedPositions.size) {
+      return;
+    }
+    for (let i = 0; i < numOfChens; i++) {
+      this.renderTexture(this.renderItems.get('fisherChen'), this.renderer, fixedPositions.get(i).x, fixedPositions.get(i).y, 140, 112);
+    }
+  }
 
+  renderTexture(texture, renderer, x, y, w = null, h = null) {
+    const width = SDL.ref.alloc('int');
+    const height = SDL.ref.alloc('int');
+    let dest = new SDL.SDL_Rect();
+    dest.x = x;
+    dest.y = y;
+
+    // if the width or height is not defined then get the dimensions from the texture
+    if (w === null || h === null) {
+      SDL.SDL_QueryTexture(texture, null, null, width, height);
+      dest.w = width.deref();
+      dest.h = height.deref();
+    } else {
+      dest.w = w;
+      dest.h = h;
+    }
+
+    // copy texture to the renderer buffer
+    SDL.SDL_RenderCopy(renderer, texture, null, dest.ref());
   }
 }
 
